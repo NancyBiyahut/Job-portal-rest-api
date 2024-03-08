@@ -1,10 +1,11 @@
 from rest_framework.decorators import api_view , permission_classes
+from django.core.mail import send_mail
 from rest_framework.response import Response
 from rest_framework import status
 from .models import JobApplication, JobListing, Employee, Employer, JobApplicationStatus
 from .serializers import JobApplicationSerializer, JobListingSerializer, EmployeeSerializer, EmployerSerializer
 from .permissions import IsEmployer
-
+import django_filters
 
 
 # Applying for a lob listing by employee
@@ -42,7 +43,8 @@ def add_job_application(request, job_listing_id):
 def applications_for_job_listing(request, job_listing_id):
     try:
         job_listing = JobListing.objects.get(pk=job_listing_id)
-        applications = JobApplication.objects.filter(job_listing=job_listing)
+        application_status = JobApplicationStatus.objects.get(name='RE') 
+        applications = JobApplication.objects.filter(job_listing=job_listing).exclude(status=  application_status)
         serializer = JobApplicationSerializer(applications, many=True)
         return Response(serializer.data)
     
@@ -77,14 +79,15 @@ def job_listings(request):
 @api_view(['GET'])
 def job_listings_with_filters(request):
     queryset = JobListing.objects.all()
-    # Implement filtering options based on request parameters
-    # For example, filter by location, salary range, etc.
-    # queryset = apply_filters(request, queryset)
+    filterset = ApplicationFilter(request.GET, queryset=queryset)
+    queryset = filterset.qs  # Apply the filter
     serializer = JobListingSerializer(queryset, many=True)
     return Response(serializer.data)
 
-
-
+class ApplicationFilter(django_filters.FilterSet):
+    class Meta:
+        model = JobListing  # Use the correct model for filtering
+        fields = '__all__'  # Specify the fields for filtering
 
 # Employee to make an account (update/edit)
 @api_view(['PUT'])

@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'rest_framework',
+    'django_filters',
     "api",
 ]
 
@@ -133,4 +134,8 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
         # Add any additional permission classes you want to use globally
     ),
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
 }
