@@ -157,3 +157,19 @@ def employee_applications(request):
         return Response(serializer.data)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def withdraw_application(request, job_application_id):
+    try:
+        job_application = JobApplication.objects.get(id=job_application_id)
+    except JobApplication.DoesNotExist:
+        return Response({"error": "Job application does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+    # Check if the current user is the owner of the job application
+    if job_application.applicant.user != request.user:
+        return Response({"error": "You do not have permission to withdraw this application."}, status=status.HTTP_403_FORBIDDEN)
+
+    # Delete the job application
+    job_application.delete()
+
+    return Response({"message": "Job application withdrawn successfully."}, status=status.HTTP_204_NO_CONTENT)

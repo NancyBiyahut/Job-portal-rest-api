@@ -28,4 +28,7 @@ urlpatterns = [
 
     #employer to manage the application status
     path('applications/<int:application_id>/status/', update_application_status, name='update_application_status'),
+    
+    # Employer to delete the application
+    path('application/<int:application_id>/withdraw/'  , withdraw_application , name = 'withdraw_application'),
 ]
