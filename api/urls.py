@@ -29,6 +29,9 @@ urlpatterns = [
     #employer to manage the application status
     path('applications/<int:application_id>/status/', update_application_status, name='update_application_status'),
     
-    # Employer to delete the application
+    # Employer to withdraw the application
     path('application/<int:application_id>/withdraw/'  , withdraw_application , name = 'withdraw_application'),
+
+    # Employer to update /edit the job listing
+    path('job-listings/<int:job_listing_id>/update' , update_job_listing , name='update_job_listing'),
 ]

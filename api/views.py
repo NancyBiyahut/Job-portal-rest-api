@@ -89,28 +89,47 @@ class ApplicationFilter(django_filters.FilterSet):
         model = JobListing  # Use the correct model for filtering
         fields = '__all__'  # Specify the fields for filtering
 
-# Employee to make an account (update/edit)
-@api_view(['PUT'])
+# Employee to make an account (create/update)
+@api_view(['PUT', 'POST'])
 def update_employee_profile(request):
     user = request.user
-    employee = Employee.objects.get(user=user)
-    serializer = EmployeeSerializer(employee, data=request.data, partial=True)
+    try:
+        employee = Employee.objects.get(user=user)
+    except Employee.DoesNotExist:
+        employee = None
+    request.data['user'] = request.user.id
+
+    # put for update and post for new user
+    if request.method == 'PUT':
+        serializer = EmployeeSerializer(employee, data=request.data, partial=True)
+    elif request.method == 'POST':
+        serializer = EmployeeSerializer(data=request.data)
+        
     if serializer.is_valid():
         serializer.save()
-        return Response(serializer.data)
+        return Response(serializer.data , status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-# Employer to make an account (update/edit)
-@api_view(['PUT'])
+# Employer to make an account (create/update)
+@api_view(['PUT', 'POST'])
 def update_employer_profile(request):
     user = request.user
-    employer = Employer.objects.get(user=user)
-    serializer = EmployerSerializer(employer, data=request.data, partial=True)
+    try:
+        employer = Employer.objects.get(user=user)
+    except Employer.DoesNotExist:
+        employer = None
+
+    # put for update and post for new user
+    request.data['user'] = request.user.id
+    if request.method == 'PUT':
+        serializer = EmployerSerializer(employer, data=request.data, partial=True)
+    elif request.method == 'POST':
+        serializer = EmployerSerializer(data=request.data)
+        
     if serializer.is_valid():
         serializer.save()
-        return Response(serializer.data)
+        return Response(serializer.data , status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -173,3 +192,23 @@ def withdraw_application(request, job_application_id):
     job_application.delete()
 
     return Response({"message": "Job application withdrawn successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+
+# Employer to update /edit the job listing
+@api_view(['PUT', 'PATCH'])
+@permission_classes([IsEmployer])
+def update_job_listing(request, pk):
+    try:
+        job_listing = JobListing.objects.get(pk=pk)
+        # Check if the logged-in user is the owner of the job listing
+        if request.user != job_listing.company.user:
+            return Response({"error": "You do not have permission to update this job listing."},
+                            status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = JobListingSerializer(job_listing, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except JobListing.DoesNotExist:
+        return Response({"error": "Job listing does not exist."}, status=status.HTTP_404_NOT_FOUND)
